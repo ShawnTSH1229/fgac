@@ -5,6 +5,10 @@
 #include "fgac_quantization.cuh"
 #include "fgac_weight_quant_xfer_tables.cuh"
 
+#if ASTC_DEBUG_COUT
+#include "stb_image_write.h"
+#endif
+
 __device__ void compute_ideal_colors_and_weights_4_comp(const image_block& blk, endpoints_and_weights& ei)
 {
 	float4 dir;
@@ -41,7 +45,6 @@ __device__ void compute_ideal_colors_and_weights_4_comp(const image_block& blk, 
 	ei.ep.endpt1 = line.a + line.b * highparam;
 
 	float length = highparam - lowparam;
-	float length_squared = length * length;
 	float scale = 1.0f / length;
 
 	for (unsigned int j = 0; j < blk.texel_count; j++)
@@ -50,6 +53,49 @@ __device__ void compute_ideal_colors_and_weights_4_comp(const image_block& blk, 
 		idx = clamp(idx, 0.0, 1.0);
 		ei.weights[j] = idx;
 	}
+
+#if ASTC_DEBUG_COUT
+
+	std::cout << "Mean:" << line.a.x / 65536.0 << "," << line.a.y / 65536.0 << "," << line.a.z / 65536.0 << std::endl;
+	std::cout << "Direction:" << line.b.x << "," << line.b.y << "," << line.b.z << std::endl;
+
+	std::cout << "End Point0:" << ei.ep.endpt0.x / 65536.0 << "," << ei.ep.endpt0.y / 65536.0 << "," << ei.ep.endpt0.z / 65536.0 << std::endl;
+	std::cout << "End Point1:" << ei.ep.endpt1.x / 65536.0 << "," << ei.ep.endpt1.y / 65536.0 << "," << ei.ep.endpt1.z / 65536.0 << std::endl;
+
+	int w_idx = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			std::cout << "W:" << (ei.weights[w_idx] / scale + lowparam) / 65536.0 << ", ";
+			w_idx++;
+		}
+		std::cout << std::endl;
+	}
+
+	int write_idx = 0;
+	char vis_data[4 * 4 * 4];
+
+	int col_ifx = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			float4 intered_color = (ei.ep.endpt0 + (ei.ep.endpt1 - ei.ep.endpt0) * ei.weights[col_ifx]) / 65536.0f;
+			std::cout << "New Color:" << intered_color.x << ", " << intered_color.y << ", " << intered_color.z << " ";
+			col_ifx++;
+
+			vis_data[write_idx + 0] = char(int(intered_color.x * 255));
+			vis_data[write_idx + 1] = char(int(intered_color.y * 255));
+			vis_data[write_idx + 2] = char(int(intered_color.z * 255));
+			vis_data[write_idx + 3] = char(255);
+			write_idx += 4;
+		}
+		std::cout << std::endl;
+	}
+
+	stbi_write_tga("H:/ShawnTSH1229/fgac/tex_test_4_4.tga", 4, 4, 4, vis_data);
+#endif
 }
 
 __device__ void compute_ideal_colors_and_weights_1plane(

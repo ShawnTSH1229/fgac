@@ -16,6 +16,13 @@
 #define BLOCK_MAX_WEIGHT_BITS 96
 #define ASTC_MAGIC_ID 0x5CA1AB13;
 
+#define ASTC_DEBUG_COUT 1
+
+#if ASTC_DEBUG_COUT
+#include <iostream>
+#include <string>
+#endif
+
 struct astc_header
 {
 	uint8_t magic[4]; //ASTC_MAGIC_ID
@@ -59,6 +66,11 @@ enum quant_method
 	QUANT_192 = 19,
 	QUANT_256 = 20
 };
+
+#if ASTC_DEBUG_COUT
+static const std::string quant_metod_str[QUANT_256 + 1] = { "QUANT_2","QUANT_3", "QUANT_4", "QUANT_5", "QUANT_6", "QUANT_8", "QUANT_10", "QUANT_12", "QUANT_16", "QUANT_20","QUANT_24", "QUANT_32",
+"QUANT_40","QUANT_48", "QUANT_64", "QUANT_80", "QUANT_96", "QUANT_128", "QUANT_160", "QUANT_192", "QUANT_256"};
+#endif
 
 enum endpoint_formats
 {

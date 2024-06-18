@@ -46,6 +46,9 @@ void sim_kernel(uint8_t* dstData, uint8_t* srcData, fgac_contexti* ctx, uint32_t
 			uint8_t* data = &srcData[texel_pos];
 			float4 datav = make_float4(data[0], data[1], data[2], data[3]) * (65535.0f / 255.0f);
 
+#if ASTC_DEBUG_COUT
+			std::cout << "Pix: " << datav.x / 65536.0 << " " << datav.y / 65536.0 << " " << datav.z / 65536.0 << " " << datav.w / 65536.0 << "\t ";
+#endif
 
 			data_min = fminf(datav, data_min);
 			data_max = fmaxf(datav, data_max);
@@ -58,6 +61,9 @@ void sim_kernel(uint8_t* dstData, uint8_t* srcData, fgac_contexti* ctx, uint32_t
 
 			idx++;
 		}
+#if ASTC_DEBUG_COUT
+		std::cout << std::endl;
+#endif
 	}
 
 	img_blk.data_min = data_min;
@@ -77,7 +83,7 @@ void cuda_backend_test()
 	static constexpr uint32_t blockx = 4;
 	static constexpr uint32_t blocky = 4;
 
-	std::string imagePath("G:/fgac/test/tex_test_4_4.png");
+	std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_4_4.png");
 	int width = 0, height = 0, comp = 0;
 	stbi_uc* srcData = stbi_load(imagePath.c_str(), &width, &height, &comp, STBI_rgb_alpha);
 	uint32_t texSize = width * height * 4 * sizeof(uint8_t);
@@ -130,7 +136,7 @@ void cuda_backend_test()
 		}
 	}
 
-	FILE* fp = fopen("G:/fgac/tex_test_4_4.astc", "w");
+	FILE* fp = fopen("H:/ShawnTSH1229/fgac/tex_test_4_4.astc", "w");
 	fwrite(outastc.data(), outastc.size(), 1, fp);
 	fclose(fp);
 }

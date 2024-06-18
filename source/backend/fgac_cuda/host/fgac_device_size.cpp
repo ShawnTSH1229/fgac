@@ -207,6 +207,9 @@ static void construct_block_size_descriptor_2d(
 		bm.weight_bits = static_cast<uint8_t>(weight_bits);
 		bm.mode_index = static_cast<uint16_t>(i);
 
+#if ASTC_DEBUG_COUT
+		std::cout << "Is Dula Plane: " << (is_dual_plane ? 1 : 0) << ",X Weights: " << x_weights << ",Y Weights: " << y_weights << ",Quant Method: " << quant_metod_str[quant_mode] << ",Weights Bits: "<< weight_bits << std::endl;
+#endif
 		bsd.block_mode_packed_index[i] = static_cast<uint16_t>(packed_bm_idx);
 
 		packed_bm_idx++;
