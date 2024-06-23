@@ -261,11 +261,7 @@ __device__ uint8_t pack_color_endpoints(
 	if(format == FMT_RGBA)
 	{
 		quantize_rgba(color0_ldr, color1_ldr, color0_out2, color1_out2, quant_level);
-		int4 color0_unpack;
-		int4 color1_unpack;
-		rgba_unpack(color0_out2, color1_out2, color0_unpack, color1_unpack);
 
-		float error = get_rgba_encoding_error(color0_ldr, color1_ldr, color0_unpack, color1_unpack);
 		retval = FMT_RGBA;
 		color0_out = color0_out2;
 		color1_out = color1_out2;
@@ -304,11 +300,6 @@ __device__ uint8_t pack_color_endpoints(
 		//format == FMT_RGB
 		quantize_rgb(color0_ldr, color1_ldr, color0_out2, color1_out2, quant_level);
 
-		int4 color0_unpack;
-		int4 color1_unpack;
-		rgba_unpack(color0_out2, color1_out2, color0_unpack, color1_unpack);
-
-		float error = get_rgba_encoding_error(color0_ldr, color1_ldr, color0_unpack, color1_unpack);
 		retval = FMT_RGB;
 		color0_out = color0_out2;
 		color1_out = color1_out2;
@@ -319,6 +310,8 @@ __device__ uint8_t pack_color_endpoints(
 		output[3] = uint8_t(color1_out.y);
 		output[4] = uint8_t(color0_out.z);
 		output[5] = uint8_t(color1_out.z);
+		output[6] = uint8_t(255);
+		output[7] = uint8_t(255);
 	}
 	return retval;
 }

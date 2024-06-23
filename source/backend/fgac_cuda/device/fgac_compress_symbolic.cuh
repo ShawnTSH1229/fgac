@@ -47,7 +47,10 @@ __device__ float compress_symbolic_block_for_partition_1plane(
 		float weights_uquantf[BLOCK_MAX_WEIGHTS];;
 		compute_quantized_weights_for_decimation(bsd, ei, weights_uquantf, quant_method(bm.quant_mode));
 		qwt_errors[i] = compute_error_of_weight_set_1plane(ei, bsd, weights_uquantf);
-		
+
+#if ASTC_DEBUG_COUT
+		std::cout << "Quant Mode:" << quant_metod_str[bm.quant_mode] << " Weight Bits:" << int(bm.weight_bits) << " Quant Error:" << qwt_errors[i] << std::endl;
+#endif
 	}
 
 	// Decide the optimal combination of color endpoint encodings and weight encodings
@@ -69,6 +72,10 @@ __device__ float compress_symbolic_block_for_partition_1plane(
 	for (unsigned int i = 0; i < candidate_count; i++)
 	{
 		const block_mode& qw_bm = bsd.block_modes[block_mode_index[i]];
+
+#if ASTC_DEBUG_COUT
+		std::cout << "Candidate Index:" << i << "\t" << "Weight Quant Mode:" << quant_metod_str[qw_bm.quant_mode] << "\t" << " Weight Bits:" << int(qw_bm.weight_bits) << "\t" << "Best Endpoint Format:" << end_point_format_str[best_ep_format_specifiers[i]] << "\t" << "Color Quant Mode:" << quant_metod_str[color_quant_level[i]] << std::endl;
+#endif
 
 		// Recompute the ideal color endpoints before storing them
 		float4 rgbs_colors;

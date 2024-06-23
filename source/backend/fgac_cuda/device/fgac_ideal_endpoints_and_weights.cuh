@@ -193,7 +193,6 @@ __device__ void recompute_ideal_colors_1plane(
 		scale_max = max(scale, scale_max);
 	}
 
-	// Initialize the luminance and scale vectors with a reasonable default
 	float scalediv = scale_min / max(scale_max, 1e-10f);
 	scalediv = clamp(scalediv,0.0,1.0);
 

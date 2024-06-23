@@ -5,6 +5,10 @@
 #include "fgac_weight_quant_xfer_tables.cuh"
 #include "fgac_quantization.cuh"
 
+#if ASTC_DEBUG_COUT
+#include "stb_image_write.h"
+#endif
+
 // There is currently no attempt to coalesce larger void-extents
 __constant__ uint8_t cbytes[8]{ 0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
@@ -66,6 +70,7 @@ __device__ void symbolic_to_physical(
 		}
 	}
 
+
 	encode_ise(weight_quant_method, real_weight_count, weights, weightbuf, 0);
 
 	for (int i = 0; i < 16; i++)
@@ -78,7 +83,6 @@ __device__ void symbolic_to_physical(
 
 	int below_weights_pos = 128 - bits_for_weights;
 
-	// Encode partition index and color endpoint types for blocks with 2+ partitions
 	{
 		write_bits(scb.color_formats, 4, 13, pcb);
 	}
@@ -96,6 +100,52 @@ __device__ void symbolic_to_physical(
 	valuecount_to_encode += vals;
 
 	encode_ise(scb.quant_mode, valuecount_to_encode, values_to_encode, pcb, 17);
+
+#if ASTC_DEBUG_COUT
+	for (int i = 0; i < 16; i++)
+	{
+		std::cout << int(pcb[i]) << std::endl;;
+	}
+
+	char vis_data[4 * 4 * 4];
+	int col_ifx = 0;
+	int write_idx = 0;
+
+	uint8_t vis_weights[64];
+	{
+		for (int i = 0; i < weight_count; i++)
+		{
+			float uqw = static_cast<float>(scb.weights[i]);
+			float qw = (uqw / 64.0f) * (weight_quant_levels - 1.0f);
+			int qwi = static_cast<int>(qw + 0.5f);
+			vis_weights[i] = qwi;
+		}
+	};
+
+	float4 ep0 = float4(scb.color_values[0], scb.color_values[2], scb.color_values[4], 255) * (1.0 / 255.0f);
+	float4 ep1 = float4(scb.color_values[1], scb.color_values[3], scb.color_values[5], 255) * (1.0 / 255.0f);
+
+	std::cout << "New EndPoint0:" << ep0.x << ", " << ep0.y << ", " << ep0.z << " " << std::endl;
+	std::cout << "New EndPoint1:" << ep1.x << ", " << ep1.y << ", " << ep1.z << " " << std::endl;
+
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			float4 intered_color = (ep0 + (ep1 - ep0) * float(vis_weights[col_ifx]) * (1.0 / 7.0));
+			std::cout << "New Color:" << intered_color.x << ", " << intered_color.y << ", " << intered_color.z << " ";
+			col_ifx++;
+
+			vis_data[write_idx + 0] = char(int(intered_color.x * 255));
+			vis_data[write_idx + 1] = char(int(intered_color.y * 255));
+			vis_data[write_idx + 2] = char(int(intered_color.z * 255));
+			vis_data[write_idx + 3] = char(255);
+			write_idx += 4;
+		}
+		std::cout << std::endl;
+	};
+	stbi_write_tga("H:/ShawnTSH1229/fgac/tex_test_4_4_b.tga", 4, 4, 4, vis_data);
+#endif
 }
 
 #endif

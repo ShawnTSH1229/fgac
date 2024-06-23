@@ -186,7 +186,8 @@ static void construct_block_size_descriptor_2d(
 		bool valid = decode_block_mode_2d(i, x_weights, y_weights, is_dual_plane, quant_mode, weight_bits);
 
 		// Always skip invalid encodings for the current block size
-		if (!valid || (x_weights > x_texels) || (y_weights > y_texels))
+		if (!valid || (x_weights != x_texels) || (y_weights != y_texels))
+		//if (!valid || (x_weights > x_texels) || (y_weights > y_texels))
 		{
 			continue;
 		}

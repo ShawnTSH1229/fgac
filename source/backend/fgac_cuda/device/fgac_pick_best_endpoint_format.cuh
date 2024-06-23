@@ -148,15 +148,16 @@ __device__ void compute_encoding_choice_errors(
 	float4 endpt1 = ep.endpt1;
 	float4 endpt_diff = fabs(endpt1 - endpt0);
 
-	bool can_offset_encode = endpt_diff.x < float(0.12f * 65535.0f) && endpt_diff.y < float(0.12f * 65535.0f) && endpt_diff.z < float(0.12f * 65535.0f) && endpt_diff.w < float(0.12f * 65535.0f);
 
 	// Store out the settings
 	eci.rgb_scale_error = (samechroma_rgb_error - uncorr_rgb_error) * 0.7f;  // empirical
 	eci.luminance_error = (luminance_rgb_error - uncorr_rgb_error) * 3.0f;   // empirical
 	eci.alpha_drop_error = alpha_drop_error * 3.0f;
-	eci.can_offset_encode = can_offset_encode;
 }
 
+#if ASTC_DEBUG_COUT
+
+#endif
 
 __device__ void compute_color_error_for_every_integer_count_and_quant_level(
 	const image_block& blk,
@@ -169,25 +170,9 @@ __device__ void compute_color_error_for_every_integer_count_and_quant_level(
 	float4 ep0 = ep.endpt0;
 	float4 ep1 = ep.endpt1;
 
-	// It is possible to get endpoint colors significantly outside [0,upper-limit] even if the
-	// input data are safely contained in [0,upper-limit]; we need to add an error term for this
 	float4 offset(65535.0f, 65535.0f, 65535.0f, 65535.0f);
-	float4 ep0_range_error_high = fmaxf(ep0 - offset, make_float4(0.0f));
-	float4 ep1_range_error_high = fmaxf(ep1 - offset, make_float4(0.0f));
 
-	float4 ep0_range_error_low = fminf(ep0, make_float4(0.0f));
-	float4 ep1_range_error_low = fminf(ep1, make_float4(0.0f));
-
-	float4 sum_range_error =
-		(ep0_range_error_low * ep0_range_error_low) +
-		(ep1_range_error_low * ep1_range_error_low) +
-		(ep0_range_error_high * ep0_range_error_high) +
-		(ep1_range_error_high * ep1_range_error_high);
-
-	float3 sum_range_error_rgb(sum_range_error.x, sum_range_error.y, sum_range_error.z);
 	float3 error_weight_rgb(1.0, 1.0, 1.0);
-	float rgb_range_error = dot(sum_range_error_rgb, error_weight_rgb) * 0.5f * blk.texel_count;
-	float alpha_range_error = sum_range_error.w * 1.0 * 0.5f * blk.texel_count;
 
 	for (int i = QUANT_2; i < QUANT_6; i++)
 	{
@@ -206,42 +191,25 @@ __device__ void compute_color_error_for_every_integer_count_and_quant_level(
 	float base_quant_error_a = 1 * blk.texel_count;
 	float base_quant_error_rgba = base_quant_error_rgb + base_quant_error_a;
 
-	float error_scale_oe_rgba = eci.can_offset_encode ? 0.5f : 1.0f;
-	float error_scale_oe_rgb = eci.can_offset_encode ? 0.25f : 1.0f;
 
 	// Pick among the available LDR endpoint modes
 	for (int i = QUANT_6; i <= QUANT_256; i++)
 	{
-		// Offset encoding not possible at higher quant levels
-		if (i >= QUANT_192)
-		{
-			error_scale_oe_rgba = 1.0f;
-			error_scale_oe_rgb = 1.0f;
-		}
 
 		float base_quant_error = baseline_quant_error[i - QUANT_6];
 		float quant_error_rgb = base_quant_error_rgb * base_quant_error;
 		float quant_error_rgba = base_quant_error_rgba * base_quant_error;
 
 		// 8 integers can encode as RGBA+RGBA
-		float full_ldr_rgba_error = quant_error_rgba
-			* error_scale_oe_rgba
-			+ rgb_range_error
-			+ alpha_range_error;
+		float full_ldr_rgba_error = quant_error_rgba;
 
 		best_error[i][3] = full_ldr_rgba_error;
 		format_of_choice[i][3] = FMT_RGBA;
 
 		// 6 integers can encode as RGB+RGB or RGBS+AA
-		float full_ldr_rgb_error = quant_error_rgb
-			* error_scale_oe_rgb
-			+ rgb_range_error
-			+ eci.alpha_drop_error;
+		float full_ldr_rgb_error = quant_error_rgb + eci.alpha_drop_error;
 
-		float rgbs_alpha_error = quant_error_rgba
-			+ eci.rgb_scale_error
-			+ rgb_range_error
-			+ alpha_range_error;
+		float rgbs_alpha_error = quant_error_rgba + eci.rgb_scale_error;
 
 		if (rgbs_alpha_error < full_ldr_rgb_error)
 		{
@@ -255,15 +223,9 @@ __device__ void compute_color_error_for_every_integer_count_and_quant_level(
 		}
 
 		// 4 integers can encode as RGBS or LA+LA
-		float ldr_rgbs_error = quant_error_rgb
-			+ rgb_range_error
-			+ eci.alpha_drop_error
-			+ eci.rgb_scale_error;
+		float ldr_rgbs_error = quant_error_rgb + eci.alpha_drop_error + eci.rgb_scale_error;
 
-		float lum_alpha_error = quant_error_rgba
-			+ rgb_range_error
-			+ alpha_range_error
-			+ eci.luminance_error;
+		float lum_alpha_error = quant_error_rgba + eci.luminance_error;
 
 		if (ldr_rgbs_error < lum_alpha_error)
 		{
@@ -277,15 +239,35 @@ __device__ void compute_color_error_for_every_integer_count_and_quant_level(
 		}
 
 		// 2 integers can encode as L+L
-		float luminance_error = quant_error_rgb
-			+ rgb_range_error
-			+ eci.alpha_drop_error
-			+ eci.luminance_error;
+		float luminance_error = quant_error_rgb + eci.alpha_drop_error + eci.luminance_error;
 
 		best_error[i][0] = luminance_error;
 		format_of_choice[i][0] = FMT_LUMINANCE;
 	}
 
+#if ASTC_DEBUG_COUT
+	for (int i = QUANT_6; i <= QUANT_256; i++)
+	{
+		for (int idx = 0; idx < 4; idx++)
+		{
+			std::cout << "endpoint format: " << quant_metod_str[i] << "\t" << end_point_format_str[format_of_choice[i][idx]] << "\tinteger count" << idx * 2 + 2 << "\terror:" << float(best_error[i][idx]) << std::endl;
+		}
+
+		int min_idx = 0;
+		float min_error = 1e30;
+		for (int idx = min_idx; idx < 4; idx++)
+		{
+			if (best_error[i][idx] < min_error)
+			{
+				min_error = best_error[i][idx];
+				min_idx = idx;
+			}
+		}
+
+		std::cout << "endpoint format: " << quant_metod_str[i] << "\t" << "best format:" << end_point_format_str[format_of_choice[i][min_idx]] << std::endl << std::endl;
+	}
+
+#endif
 }
 
 __device__ float one_partition_find_best_combination_for_bitcount(
@@ -366,12 +348,10 @@ __device__ unsigned int compute_ideal_endpoint_formats(
 	// Ensure that the first iteration understep contains data that will never be picked
 	errors_of_best_combination[start_block_mode] = clear_error;
 	best_quant_levels[start_block_mode] = clear_quant;
-	//best_quant_levels_mode[start_block_mode] = clear_quant;
 
 	// Ensure that last iteration overstep contains data that will never be picked
 	errors_of_best_combination[end_block_mode - 1] = clear_error;
 	best_quant_levels[end_block_mode - 1] = clear_quant;
-	//best_quant_levels_mode[end_block_mode - 1] = clear_quant;
 
 	// Track a scalar best to avoid expensive search at least once ...
 	float error_of_best_combination = ERROR_CALC_DEFAULT;
@@ -387,6 +367,10 @@ __device__ unsigned int compute_ideal_endpoint_formats(
 
 		float error_of_best = one_partition_find_best_combination_for_bitcount(best_error, format_of_choice, qwt_bitcounts[i],
 			best_quant_levels[i], best_ep_formats[i]);
+
+#if ASTC_DEBUG_COUT
+		std::cout << "Quant Mode Encoded: " <<i << "\t" << " best ep quant level:" << quant_metod_str[best_quant_levels[i]] << "\t" <<" best ep quant format:" <<"\t"<< end_point_format_str[best_ep_formats[i]]<<"\t" << " error:" << error_of_best << std::endl;
+#endif
 
 		float total_error = error_of_best + qwt_errors[i];
 		errors_of_best_combination[i] = total_error;
@@ -444,10 +428,7 @@ __device__ unsigned int compute_ideal_endpoint_formats(
 		}
 
 		block_mode[i] = best_error_weights[i];
-
 		quant_level[i] = static_cast<quant_method>(best_quant_levels[best_error_weights[i]]);
-		//quant_level_mode[i] = static_cast<quant_method>(best_quant_levels_mode[best_error_weights[i]]);
-
 		best_ep_format_specifiers[i] = best_ep_formats[best_error_weights[i]];
 	}
 

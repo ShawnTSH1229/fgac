@@ -298,16 +298,26 @@ __device__ void write_bits(
 ) {
 	unsigned int mask = (1 << bitcount) - 1;
 	value &= mask;
-	ptr += bitoffset >> 3;
-	bitoffset &= 7;
-	value <<= bitoffset;
-	mask <<= bitoffset;
+	int dst_byte = bitoffset >> 3;
+	ptr += dst_byte;
+	int sub_offset = bitoffset & 7;
+	value <<= sub_offset;
+	mask <<= sub_offset;
 	mask = ~mask;
 
-	ptr[0] &= mask;
-	ptr[0] |= value;
-	ptr[1] &= mask >> 8;
-	ptr[1] |= value >> 8;
+	int low_mask = mask & 7;
+	int high_mask = (mask >> 8) & 7;
+
+	int low_value = value;
+	int high_value = value >> 8;
+
+	//ptr[0] &= low_mask;
+	ptr[0] |= low_value;
+	//ptr[1] &= high_mask;
+	ptr[1] |= high_value;
+
+	int vis_low = ptr[0];
+	int vis_high = ptr[1];
 }
 
 void encode_ise(

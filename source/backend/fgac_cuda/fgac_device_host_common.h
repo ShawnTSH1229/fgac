@@ -16,7 +16,7 @@
 #define BLOCK_MAX_WEIGHT_BITS 96
 #define ASTC_MAGIC_ID 0x5CA1AB13;
 
-#define ASTC_DEBUG_COUT 1
+#define ASTC_DEBUG_COUT 0
 
 #if ASTC_DEBUG_COUT
 #include <iostream>
@@ -67,11 +67,6 @@ enum quant_method
 	QUANT_256 = 20
 };
 
-#if ASTC_DEBUG_COUT
-static const std::string quant_metod_str[QUANT_256 + 1] = { "QUANT_2","QUANT_3", "QUANT_4", "QUANT_5", "QUANT_6", "QUANT_8", "QUANT_10", "QUANT_12", "QUANT_16", "QUANT_20","QUANT_24", "QUANT_32",
-"QUANT_40","QUANT_48", "QUANT_64", "QUANT_80", "QUANT_96", "QUANT_128", "QUANT_160", "QUANT_192", "QUANT_256"};
-#endif
-
 enum endpoint_formats
 {
 	FMT_LUMINANCE = 0,
@@ -91,6 +86,29 @@ enum endpoint_formats
 	FMT_HDR_RGB_LDR_ALPHA = 14,
 	FMT_HDR_RGBA = 15
 };
+
+#if ASTC_DEBUG_COUT
+static const std::string quant_metod_str[QUANT_256 + 1] = { "QUANT_2","QUANT_3", "QUANT_4", "QUANT_5", "QUANT_6", "QUANT_8", "QUANT_10", "QUANT_12", "QUANT_16", "QUANT_20","QUANT_24", "QUANT_32",
+"QUANT_40","QUANT_48", "QUANT_64", "QUANT_80", "QUANT_96", "QUANT_128", "QUANT_160", "QUANT_192", "QUANT_256" };
+
+static const std::string end_point_format_str[FMT_HDR_RGBA +1] = { "FMT_LUMINANCE",
+	"FMT_LUMINANCE_DELTA",
+	"FMT_HDR_LUMINANCE_LARGE_RANGE",
+	"FMT_HDR_LUMINANCE_SMALL_RANGE",
+	"FMT_LUMINANCE_ALPHA",
+	"FMT_LUMINANCE_ALPHA_DELTA",
+	"FMT_RGB_SCALE",
+	"FMT_HDR_RGB_SCALE",
+	"FMT_RGB",
+	"FMT_RGB_DELTA",
+	"FMT_RGB_SCALE_ALPHA",
+	"FMT_HDR_RGB",
+	"FMT_RGBA",
+	"FMT_RGBA_DELTA",
+	"FMT_HDR_RGB_LDR_ALPHA",
+	"FMT_HDR_RGBA",
+};
+#endif
 
 struct fgac_config
 {

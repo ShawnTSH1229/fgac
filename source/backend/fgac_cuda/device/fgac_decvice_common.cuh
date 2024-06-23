@@ -25,7 +25,6 @@ struct encoding_choice_errors
 	float rgb_scale_error;
 	float luminance_error;
 	float alpha_drop_error;
-	bool can_offset_encode;
 };
 
 
