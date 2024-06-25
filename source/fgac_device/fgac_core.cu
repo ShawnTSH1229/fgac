@@ -210,6 +210,13 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 			samec_rgb_plines.amod = make_float3(0);
 			samec_rgb_plines.bs = samec_rgb_lines.b;
 
+#if CUDA_OUTBUFFER_DEBUG
+			if (lane_id == 0)
+			{
+				printf("lane_id %d, x: %f,x: %f,x: %f\n", lane_id, data_mean.x, data_mean.y, data_mean.z);
+			}
+#endif
+
 			// Luminance always goes though zero, so this is simpler than the others
 			float val = 0.577350258827209473f;
 			luminance_plines.amod = make_float3(0);
@@ -229,10 +236,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 			param = dot(datav, luminance_plines.bs);
 			dist = param * luminance_plines.bs - datav;
 			float l_err = dot(dist, dist);
-#if CUDA_OUTBUFFER_DEBUG
-			printf("lane_id %d, shared_rgb_scale_error %f\n", lane_id, samec_err);
-			printf("lane_id %d, shared_luminance_error %f\n", lane_id, l_err);
-#endif
+
 			__syncwarp(mask);
 
 			float sum_uncor_err = warp_reduce_sum(mask, uncor_err);

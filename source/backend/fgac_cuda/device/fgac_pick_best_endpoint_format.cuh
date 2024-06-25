@@ -111,6 +111,7 @@ __device__ void compute_encoding_choice_errors(
 {
 	float4 dir;
 	float4 avg = blk.data_mean;
+	avg.w = 0.0;
 	compute_avgs_and_dirs_3_comp(blk, dir);
 
 	line3 uncor_rgb_lines;
