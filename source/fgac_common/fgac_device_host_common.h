@@ -16,6 +16,8 @@
 #define BLOCK_MAX_WEIGHT_BITS 96
 #define ASTC_MAGIC_ID 0x5CA1AB13;
 
+#define CUDA_OUTBUFFER_DEBUG 1
+
 struct astc_header
 {
 	uint8_t magic[4]; //ASTC_MAGIC_ID

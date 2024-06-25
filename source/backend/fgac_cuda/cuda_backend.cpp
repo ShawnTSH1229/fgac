@@ -83,8 +83,8 @@ void cuda_backend_test()
 	static constexpr uint32_t blockx = 4;
 	static constexpr uint32_t blocky = 4;
 
-	//std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_4_4.png");
-	std::string imagePath("H:/ShawnTSH1229/fgac/test/test.jpeg");
+	std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_4_4.png");
+	//std::string imagePath("H:/ShawnTSH1229/fgac/test/test.jpeg");
 	int width = 0, height = 0, comp = 0;
 	stbi_uc* srcData = stbi_load(imagePath.c_str(), &width, &height, &comp, STBI_rgb_alpha);
 	uint32_t texSize = width * height * 4 * sizeof(uint8_t);

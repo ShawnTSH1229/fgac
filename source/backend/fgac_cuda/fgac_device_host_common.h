@@ -16,7 +16,7 @@
 #define BLOCK_MAX_WEIGHT_BITS 96
 #define ASTC_MAGIC_ID 0x5CA1AB13;
 
-#define ASTC_DEBUG_COUT 0
+#define ASTC_DEBUG_COUT 1
 
 #if ASTC_DEBUG_COUT
 #include <iostream>

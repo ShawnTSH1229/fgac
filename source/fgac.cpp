@@ -11,12 +11,16 @@
 #include "fgac_common/fgac_device_host_common.h"
 #include "fgac_host/fgac_host_common.h"
 
-extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, const block_size_descriptor* const bsd, uint32_t tex_size_x, uint32_t tex_size_y, uint32_t blk_num_x, uint32_t blk_num_y, uint32_t dest_offset);
+extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, const block_size_descriptor* const bsd, uint32_t tex_size_x, uint32_t tex_size_y, uint32_t blk_num_x, uint32_t blk_num_y, uint32_t dest_offset
+#if CUDA_OUTBUFFER_DEBUG
+	, uint8_t * host_debug_buffer
+#endif
+);
 
 void fgac_example()
 {
 	//input parameters
-	std::string imagePath("H:/ShawnTSH1229/fgac/test/test.jpeg");
+	std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_4_4.png");
 
 	static constexpr uint32_t blockx = 4;
 	static constexpr uint32_t blocky = 4;
@@ -60,7 +64,19 @@ void fgac_example()
 	block_size_descriptor bsd;
 	init_block_descriptor(blockx, blocky, bsd);
 
-	image_compress(outastc.data(), srcData, &bsd, width, height, blk_num_x, blk_num_y, sizeof(astc_header));
+#if CUDA_OUTBUFFER_DEBUG
+	uint8_t* host_debug_buffer = (uint8_t*)malloc(4 * 4 * 4);
+#endif
+
+	image_compress(outastc.data(), srcData, &bsd, width, height, blk_num_x, blk_num_y, sizeof(astc_header),
+#if CUDA_OUTBUFFER_DEBUG
+		host_debug_buffer
+#endif	
+		);
+#if CUDA_OUTBUFFER_DEBUG
+	stbi_write_tga("H:/ShawnTSH1229/fgac/tex_test_4_4.tga", 4, 4, 4, host_debug_buffer);
+	free(host_debug_buffer);
+#endif
 
 	std::string filename("H:/ShawnTSH1229/fgac/tex_test_4_4.astc");
 	std::ofstream file(filename, std::ios::out | std::ios::binary);
