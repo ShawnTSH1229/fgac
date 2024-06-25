@@ -74,8 +74,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 		}
 
 		float3 sum = warp_reduce_vec_sum(mask, datav);
-		//__syncwarp(mask);
-		__syncthreads();
+		__syncwarp(mask);
 		
 		sum = warp_boardcast_vec(mask, sum);
 		
@@ -95,8 +94,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 			float3 valid_sum_yp = (sum_y_mask & (1 << lane_id)) != 0 ? texel_datum : float3(0, 0, 0);
 			float3 valid_sum_zp = (sum_z_mask & (1 << lane_id)) != 0 ? texel_datum : float3(0, 0, 0);
 
-			//__syncwarp(mask);
-			__syncthreads();
+			__syncwarp(mask);
 
 			float3 sum_xp = warp_reduce_vec_sum(mask, valid_sum_xp);
 			float3 sum_yp = warp_reduce_vec_sum(mask, valid_sum_yp);
@@ -135,15 +133,13 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 
 		// compute_ideal_colors_and_weights_4_comp
 		{
-			//__syncwarp(mask);
-			__syncthreads();
+			__syncwarp(mask);
 			safe_dir = warp_boardcast_vec(mask, safe_dir);
 			const float param = dot(datav - data_mean, safe_dir);
 			float lowparam = param;
 			float highparam = param;
 
-			//__syncwarp(mask);
-			__syncthreads();
+			__syncwarp(mask);
 #pragma unroll
 			for (int offset = (BLOCK_MAX_TEXELS >> 1); offset > 0; offset >>= 1)
 			{
@@ -180,8 +176,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 				shared_endpt[1] = endpt1;
 			}
 
-			//__syncwarp(mask);
-			__syncthreads();
+			__syncwarp(mask);
 
 			length = __shfl_sync(mask, length, 0, BLOCK_MAX_TEXELS);
 			scale = __shfl_sync(mask, scale, 0, BLOCK_MAX_TEXELS);
@@ -238,8 +233,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 			printf("lane_id %d, shared_rgb_scale_error %f\n", lane_id, samec_err);
 			printf("lane_id %d, shared_luminance_error %f\n", lane_id, l_err);
 #endif
-			//__syncwarp(mask);
-			__syncthreads();
+			__syncwarp(mask);
 
 			float sum_uncor_err = warp_reduce_sum(mask, uncor_err);
 			float sum_samec_err = warp_reduce_sum(mask, samec_err);
