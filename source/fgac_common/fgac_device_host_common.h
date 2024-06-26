@@ -86,12 +86,12 @@ struct block_size_descriptor
 {
 	uint8_t xdim; // The block x dimension
 	uint8_t ydim; // The block y dimension
-
 	uint8_t texel_count; // The block total texel count e.g. 8*8
+	uint8_t padding;
 
 	uint32_t block_mode_count_1plane_selected;
+
 	uint16_t block_mode_packed_index[WEIGHTS_MAX_BLOCK_MODES];
 	block_mode block_modes[WEIGHTS_MAX_BLOCK_MODES];
 };
-
 #endif

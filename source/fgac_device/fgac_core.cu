@@ -55,14 +55,6 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 	uint32_t tid = threadIdx.x;
 	uint32_t lane_id = tid % 32;
 
-#if CUDA_OUTBUFFER_DEBUG
-	__syncwarp();
-	if (tid == 0)
-	{
-		printf("debug error: %d\n", int(bsd->block_modes[1].mode_index));
-	}
-#endif
-
 	unsigned mask = __ballot_sync(0xFFFFFFFFu, tid < BLOCK_MAX_TEXELS);
 	if (tid < BLOCK_MAX_TEXELS)
 	{
@@ -270,10 +262,8 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 
 	__syncthreads();
 	compute_color_error_for_every_integer_count_and_quant_level(bsd, tid);
-
 	compress_block(bsd, tid);
 	
-
 	uint32_t blk_dt_byte = bid * 16;
 	dstData[blk_dt_byte] = srcData[blk_st_byte];
 }
@@ -296,9 +286,12 @@ extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, 
 	uint32_t dest_astc_size = blk_num_x * blk_num_y * 16;
 	CUDA_VARIFY(cudaMalloc((void**)&dest_device_data, dest_astc_size));
 
+	int bsd_size = sizeof(block_size_descriptor);
+
 	block_size_descriptor* device_bsd;
-	CUDA_VARIFY(cudaMalloc((void**)&device_bsd, sizeof(bsd)));
-	CUDA_VARIFY(cudaMemcpy(device_bsd, bsd, sizeof(bsd), cudaMemcpyHostToDevice));
+	CUDA_VARIFY(cudaMalloc((void**)&device_bsd, bsd_size));
+	CUDA_VARIFY(cudaMemcpy(device_bsd, bsd, bsd_size, cudaMemcpyHostToDevice));
+
 
 #if CUDA_OUTBUFFER_DEBUG
 	int debug_buffer_size = 4 * 4 * 4;

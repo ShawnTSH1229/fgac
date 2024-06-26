@@ -13,8 +13,6 @@ __constant__ float quant_levels_m1[12]{ 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 9.0f
 
 __inline__ __device__ void compress_block(const block_size_descriptor* const bsd, uint32_t tid)
 {
-
-
 	if (tid < 4)
 	{
 		candidate_combine_errors[tid] = 1e30f;
@@ -107,6 +105,7 @@ __inline__ __device__ void compress_block(const block_size_descriptor* const bsd
 					integer_count_error = shared_best_error[quant_level][integer_count - 1]; // best combined error
 				}
 
+
 				const uint32_t min_combine_error_mask0 = 0x000F000F;
 
 				__syncwarp(min_combine_error_mask0);
@@ -120,18 +119,19 @@ __inline__ __device__ void compress_block(const block_size_descriptor* const bsd
 
 				__syncwarp(min_combine_error_mask0);
 
+				const uint32_t min_combine_error_mask1 = 0x000F000F;
+				other_integer_count_error = __shfl_xor_sync(min_combine_error_mask1, integer_count_error, 1);
+				int other_best_integer_count = __shfl_xor_sync(min_combine_error_mask1, best_integer_count, 1);
+				if (other_integer_count_error < integer_count_error)
+				{
+					best_integer_count = other_best_integer_count;
+					integer_count_error = other_integer_count_error;
+
+				}
+
+
 				if (in_block_idx == 0)
 				{
-
-					const uint32_t min_combine_error_mask1 = 0x00010001;
-
-					other_integer_count_error = __shfl_xor_sync(min_combine_error_mask1, integer_count_error, 1);
-					int other_best_integer_count = __shfl_xor_sync(min_combine_error_mask1, best_integer_count, 1);
-					if (other_integer_count_error < integer_count_error)
-					{
-						best_integer_count = other_best_integer_count;
-						integer_count_error = other_integer_count_error;
-					}
 
 					best_integer_count_error = integer_count_error;
 
@@ -139,6 +139,8 @@ __inline__ __device__ void compress_block(const block_size_descriptor* const bsd
 
 					uint8_t best_quant_level = static_cast<uint8_t>(ql);
 					uint8_t best_format = FMT_LUMINANCE;
+
+
 
 					if (ql >= QUANT_6)
 					{
