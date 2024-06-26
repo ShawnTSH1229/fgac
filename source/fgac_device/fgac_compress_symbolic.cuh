@@ -13,6 +13,8 @@ __constant__ float quant_levels_m1[12]{ 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 9.0f
 
 __inline__ __device__ void compress_block(const block_size_descriptor* const bsd, uint32_t tid)
 {
+
+
 	if (tid < 4)
 	{
 		candidate_combine_errors[tid] = 1e30f;
@@ -32,7 +34,7 @@ __inline__ __device__ void compress_block(const block_size_descriptor* const bsd
 		bool is_block_mode_index_valid = (block_mode_process_idx + 1) < max_block_modes;
 		if (is_block_mode_index_valid)
 		{
-			block_mode bm = bsd->block_modes[global_idx];
+			const block_mode bm = bsd->block_modes[global_idx];
 			int bitcount = 115 - 4 - bm.weight_bits;
 
 			quant_method quant_level = quant_method(bm.quant_mode);
@@ -47,15 +49,10 @@ __inline__ __device__ void compress_block(const block_size_descriptor* const bsd
 			float ix = shared_blk_weights[in_block_idx];
 			ix = clamp(ix, 0.0, 1.0);
 			float eai_weight = ix;
-#if CUDA_OUTBUFFER_DEBUG
-			__syncwarp();
-			printf("debug error: %f", eai_weight);
-#endif
+
 
 			// Look up the two closest indexes and return the one that was closest(quant)
 			float ix1 = ix * quant_level_m1;
-
-
 
 			int weightl = int(ix1);
 			int weighth = min(weightl + 1, steps_m1);

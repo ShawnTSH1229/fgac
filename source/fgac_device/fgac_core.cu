@@ -55,6 +55,14 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 	uint32_t tid = threadIdx.x;
 	uint32_t lane_id = tid % 32;
 
+#if CUDA_OUTBUFFER_DEBUG
+	__syncwarp();
+	if (tid == 0)
+	{
+		printf("debug error: %d\n", int(bsd->block_modes[1].mode_index));
+	}
+#endif
+
 	unsigned mask = __ballot_sync(0xFFFFFFFFu, tid < BLOCK_MAX_TEXELS);
 	if (tid < BLOCK_MAX_TEXELS)
 	{
@@ -262,6 +270,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 
 	__syncthreads();
 	compute_color_error_for_every_integer_count_and_quant_level(bsd, tid);
+
 	compress_block(bsd, tid);
 	
 
