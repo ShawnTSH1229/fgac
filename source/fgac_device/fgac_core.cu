@@ -1,5 +1,6 @@
 #include "fgac_device_common.cuh"
 #include "fgac_pick_best_endpoint_format.cuh"
+#include "fgac_compress_symbolic.cuh"
 
 #if CUDA_OUTBUFFER_DEBUG
 #include <stdio.h>
@@ -185,7 +186,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 			idx = clamp(idx, 0.0, 1.0);
 			float weight = idx;
 
-			shared_blk_weights[bid] = weight;
+			shared_blk_weights[tid] = weight;
 		}
 
 		//compute_encoding_choice_errors
@@ -261,8 +262,8 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 
 	__syncthreads();
 	compute_color_error_for_every_integer_count_and_quant_level(bsd, tid);
+	compress_block(bsd, tid);
 	
-
 
 	uint32_t blk_dt_byte = bid * 16;
 	dstData[blk_dt_byte] = srcData[blk_st_byte];
