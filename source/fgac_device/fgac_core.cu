@@ -1,6 +1,8 @@
 #include "fgac_device_common.cuh"
 #include "fgac_pick_best_endpoint_format.cuh"
 #include "fgac_compress_symbolic.cuh"
+#include "fgac_color_quantize.cuh"
+#include "fgac_decompress_symbolic.cuh"
 
 #if CUDA_OUTBUFFER_DEBUG
 #include <stdio.h>
@@ -62,7 +64,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 
 		const uint8_t* data = &srcData[trd_byte_offset];
 		const float3 datav = make_float3(data[0], data[1], data[2]) * (65535.0f / 255.0f);
-		shared_blk_data[bid] = datav;
+		shared_blk_data[tid] = datav;
 
 		int4 is_all_same;
 		__match_all_sync(mask, datav.x, &is_all_same.x);
@@ -238,6 +240,12 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 			dist = param * luminance_plines.bs - datav;
 			float l_err = dot(dist, dist);
 
+			if (tid == 0)
+			{
+				shared_data_mean = data_mean;
+				shared_scale_dir = samec_rgb_lines.b;
+			}
+
 			__syncwarp(mask);
 
 			float sum_uncor_err = warp_reduce_sum(mask, uncor_err);
@@ -252,7 +260,6 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 		}
 
 #if CUDA_OUTBUFFER_DEBUG
-		
 		debug_out_buffer[tid * 4 + 0] = 255;
 		debug_out_buffer[tid * 4 + 1] = 255;
 		debug_out_buffer[tid * 4 + 2] = 255;
@@ -264,6 +271,123 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 	compute_color_error_for_every_integer_count_and_quant_level(bsd, tid);
 	compress_block(bsd, tid);
 	
+	// Iterate over the N believed-to-be-best modes to find out which one is actually best
+	{
+		//recompute_ideal_colors_1plane
+		if (tid < BLOCK_MAX_TEXELS)
+		{
+			float scale = dot(float3(shared_scale_dir.x, shared_scale_dir.x, shared_scale_dir.x), float3(shared_blk_data[tid].x, shared_blk_data[tid].y, shared_blk_data[tid].z));
+			float min_scale = scale;
+			float max_scale = scale;
+			__syncwarp(mask);
+#pragma unroll
+			for (int offset = (BLOCK_MAX_TEXELS >> 1); offset > 0; offset >>= 1)
+			{
+				float other_min_scale = __shfl_xor_sync(mask, min_scale, offset);
+				if (min_scale > other_min_scale)
+				{
+					min_scale = other_min_scale;
+				}
+
+				float other_max_scale = __shfl_xor_sync(mask, max_scale, offset);
+				if (max_scale < other_max_scale)
+				{
+					max_scale = other_max_scale;
+				}
+			}
+
+			if (tid == 0)
+			{
+				float scalediv = min_scale / max(max_scale, 1e-10f);
+				scalediv = clamp(scalediv, 0.0, 1.0);
+				float3 sds = shared_scale_dir * max_scale;
+				shared_rgbs_color = make_float4(sds.x, sds.y, sds.x, scalediv);
+			}
+		}
+
+		if (tid == 0)
+		{
+			shared_block_compress_error = 1e30f;
+		}
+
+		__syncwarp();
+		
+#pragma unroll
+		for (int candidate_loop_idx = 0; candidate_loop_idx < 2; candidate_loop_idx ++)
+		{
+			int sub_block_idx = tid / 16;
+			int in_block_idx = tid % 16;
+
+			int global_idx = sub_block_idx + candidate_loop_idx * 2;
+			const block_mode& qw_bm = bsd->block_modes[candidate_block_mode_index[global_idx]];
+			
+			uint8_t weight_to_encode = shared_blk_weights[in_block_idx] * 64;
+
+			// pack_color_endpoints
+			float4 color0 = make_float4(shared_endpt[0].x, shared_endpt[0].y, shared_endpt[0].z, 0.0);
+			float4 color1 = make_float4(shared_endpt[1].x, shared_endpt[1].y, shared_endpt[1].z, 0.0);
+
+			uint8_t color_values[8];
+			pack_color_endpoints(color0, color1, shared_rgbs_color, candidate_ep_format_specifiers[global_idx], color_values, quant_method(candidate_color_quant_level[global_idx]));
+
+			int4 ep0;
+			int4 ep1;
+			bool rgb_lns;
+			bool a_lns;
+
+			unpack_color_endpoints(candidate_ep_format_specifiers[global_idx], color_values, ep0, ep1);
+
+			float sum_error = 0.0;
+			// compute_symbolic_block_difference_1plane_1partition
+			{
+				// Compute EP1 contribution
+				int weight1 = shared_blk_weights[in_block_idx] * 64.0;
+				ep1 = ep1 * weight1;
+
+				// Compute EP0 contribution
+				int weight0 = int(64) - weight1;
+				ep0 = ep0 * weight0;
+
+				// Combine contributions
+				int colori_r = int(ep0.x + ep1.x + int(32)) >> 6;
+				int colori_g = int(ep0.y + ep1.y + int(32)) >> 6;
+				int colori_b = int(ep0.z + ep1.z + int(32)) >> 6;
+				int colori_a = int(ep0.w + ep1.w + int(32)) >> 6;
+
+				// Compute color diff
+				float4 colorf = make_float4(colori_r, colori_g, colori_b, 0);
+				float4 color_origin = make_float4(shared_blk_data[in_block_idx].x, shared_blk_data[in_block_idx].y, shared_blk_data[in_block_idx].z, 0);
+
+				float4 color_error = make_float4(
+					fmin(abs(color_origin.x - colorf.x), float(1e15f)),
+					fmin(abs(color_origin.y - colorf.y), float(1e15f)),
+					fmin(abs(color_origin.z - colorf.z), float(1e15f)),
+					fmin(abs(color_origin.w - colorf.w), float(1e15f)));
+
+				// Compute squared error metric
+				color_error = color_error * color_error;
+
+				float metric = color_error.x + color_error.y + color_error.z + color_error.w;
+				sum_error = metric;
+				__syncwarp();
+
+				sum_error += __shfl_down_sync(0xFFFFFFFF, sum_error, 8, 32);
+				sum_error += __shfl_down_sync(0xFFFFFFFF, sum_error, 4, 32);
+				sum_error += __shfl_down_sync(0xFFFFFFFF, sum_error, 2, 32);
+				sum_error += __shfl_down_sync(0xFFFFFFFF, sum_error, 1, 32);
+
+#if CUDA_OUTBUFFER_DEBUG
+				if (candidate_loop_idx == 0 && sub_block_idx == 0)
+				{
+					printf("tid: %d , original color x: %f, colorfx:%f, metric:%f\n", tid, color_origin.x, colorf.x, metric);
+				}
+#endif
+				if()
+			}
+		}
+	}
+
+
 	uint32_t blk_dt_byte = bid * 16;
 	dstData[blk_dt_byte] = srcData[blk_st_byte];
 }

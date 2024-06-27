@@ -2,7 +2,7 @@
 #define _FGAC_COLOR_QUANTIZE_CUH_
 
 #include "fgac_quantization.cuh"
-#include "fgac_decvice_common.cuh"
+#include "fgac_device_common.cuh"
 
 __inline__ __device__ uint8_t quant_color(
 	quant_method quant_level,
@@ -61,7 +61,7 @@ __inline__ __device__ void rgba_unpack(
 	int4 input1,
 	int4& output0,
 	int4& output1
-) 
+)
 {
 	if ((input0.x + input0.y + input0.z) > (input1.x + input1.y + input1.z))
 	{
@@ -87,11 +87,11 @@ __inline__ __device__ void quantize_rgb(
 	do
 	{
 		float4 round_color0 = color0 + make_float4(0.5f);
-		
+
 		int4 color0q = max(int4(round_color0.x, round_color0.y, round_color0.z, round_color0.w), make_int4(0));
 		color0i = quant_color3(quant_level, color0q, color0);
 		color0 = color0 - nudge;
-	
+
 		float4 round_color1 = color1 + make_float4(0.5f);
 		int4 color1q = min(int4(round_color1.x, round_color1.y, round_color1.z, round_color1.w), make_int4(255));
 		color1i = quant_color3(quant_level, color1q, color1);
@@ -136,7 +136,7 @@ __inline__ __device__ void quantize_rgbs(
 	float oldcolorsum = (color.x + color.y + color.z) * scale;
 	float newcolorsum = static_cast<float>(ri + gi + bi);
 
-	float scalea = clamp(color.w * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f),0.0,1.0);
+	float scalea = clamp(color.w * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f), 0.0, 1.0);
 	int scale_idx = int(scalea * 256.0f + 0.5);
 	scale_idx = clamp(scale_idx, 0, 255);
 
@@ -230,7 +230,7 @@ __inline__ __device__ uint8_t pack_color_endpoints(
 {
 	// Clamp colors to a valid LDR range
 	// Note that HDR has a lower max, handled in the conversion functions
-	color0 = clamp(color0,make_float4(0.0f), make_float4(65535.0f));
+	color0 = clamp(color0, make_float4(0.0f), make_float4(65535.0f));
 	color1 = clamp(color1, make_float4(0.0f), make_float4(65535.0f));
 
 	// Pre-scale the LDR value we need to the 0-255 quantizable range
@@ -240,8 +240,8 @@ __inline__ __device__ uint8_t pack_color_endpoints(
 	uint8_t retval = 0;
 	int4 color0_out, color1_out;
 	int4 color0_out2, color1_out2;
-	
-	if(format == FMT_RGBA)
+
+	if (format == FMT_RGBA)
 	{
 		quantize_rgba(color0_ldr, color1_ldr, color0_out2, color1_out2, quant_level);
 

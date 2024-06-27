@@ -13,12 +13,19 @@ __shared__ float shared_luminance_error;
 __shared__ float shared_best_error[21][4];
 __shared__ uint8_t shared_format_of_choice[21][4];
 
-
+// find best k-iteration
 __shared__ uint32_t candidate_ep_format_specifiers[4+2];
 __shared__ int candidate_block_mode_index[4+2];
 __shared__ int candidate_color_quant_level[4+2];
 
 __shared__ float candidate_combine_errors[4+2];
+
+// recompute_ideal_colors_1plane
+__shared__ float3 shared_data_mean;
+__shared__ float3 shared_scale_dir;
+__shared__ float4 shared_rgbs_color;
+
+__shared__ float shared_block_compress_error;
 
 struct quant_and_transfer_table
 {

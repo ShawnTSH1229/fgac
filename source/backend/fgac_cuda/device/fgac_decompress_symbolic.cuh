@@ -2,7 +2,8 @@
 #define _FGAC_DECOMPRESS_SYMBOLIC_CUH_
 #include "fgac_decvice_common.cuh"
 
-__device__ void rgb_scale_unpack(
+
+__inline__ __device__ void rgb_scale_unpack(
 	int4 input0,
 	int scale,
 	int4& output0,
@@ -17,7 +18,7 @@ __device__ void rgb_scale_unpack(
 	output0.w = 255;
 }
 
-__device__ void rgb_scale_alpha_unpack(
+__inline__ __device__ void rgb_scale_alpha_unpack(
 	int4 input0,
 	uint8_t alpha1,
 	uint8_t scale,
@@ -32,7 +33,7 @@ __device__ void rgb_scale_alpha_unpack(
 	output0.w = input0.w;
 }
 
-__device__ void luminance_unpack(
+__inline__ __device__ void luminance_unpack(
 	const uint8_t input[2],
 	int4& output0,
 	int4& output1
@@ -43,7 +44,7 @@ __device__ void luminance_unpack(
 	output1 = int4(lum1, lum1, lum1, 255);
 }
 
-__device__ void luminance_alpha_unpack(
+__inline__ __device__ void luminance_alpha_unpack(
 	const uint8_t input[4],
 	int4& output0,
 	int4& output1
@@ -57,7 +58,7 @@ __device__ void luminance_alpha_unpack(
 }
 
 
-__device__ void unpack_color_endpoints(
+__inline__ __device__ void unpack_color_endpoints(
 	int format,
 	const uint8_t* input,
 	int4& output0,
@@ -183,6 +184,9 @@ __device__ float compute_symbolic_block_difference_1plane_1partition(
 
 		float metric = color_error_r + color_error_g + color_error_b + color_error_a;
 
+#if ASTC_DEBUG_COUT
+		std::cout << "original color x: " << color_orig_r << " color_r: " << color_r << " metric:" << metric << std::endl;
+#endif
 		// Mask off bad lanes
 		summa += metric;
 	}

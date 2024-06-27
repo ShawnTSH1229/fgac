@@ -95,9 +95,6 @@ __inline__ __device__ void compute_color_error_for_every_integer_count_and_quant
 		shared_format_of_choice[choice_error_idx][0] = FMT_LUMINANCE;
 
 #if CUDA_OUTBUFFER_DEBUG
-		//printf("shared_rgb_scale_error %f", shared_rgb_scale_error);
-		//printf("shared_luminance_error %f", shared_luminance_error);
-
 		printf("Lane Id %d: int count 2/4/6/8, error %f, error %f,  error %f,  error %f\n", choice_error_idx, shared_best_error[choice_error_idx][0], shared_best_error[choice_error_idx][1], shared_best_error[choice_error_idx][2], shared_best_error[choice_error_idx][3]);
 #endif
 	}

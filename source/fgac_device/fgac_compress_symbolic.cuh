@@ -16,6 +16,7 @@ __inline__ __device__ void compress_block(const block_size_descriptor* const bsd
 	if (tid < 4)
 	{
 		candidate_combine_errors[tid] = 1e30f;
+		candidate_block_mode_index[tid] = 2049; //invalid
 	}
 
 	//** compute_ideal_endpoint_formats
@@ -105,7 +106,6 @@ __inline__ __device__ void compress_block(const block_size_descriptor* const bsd
 					integer_count_error = shared_best_error[quant_level][integer_count - 1]; // best combined error
 				}
 
-
 				const uint32_t min_combine_error_mask0 = 0x000F000F;
 
 				__syncwarp(min_combine_error_mask0);
@@ -126,21 +126,16 @@ __inline__ __device__ void compress_block(const block_size_descriptor* const bsd
 				{
 					best_integer_count = other_best_integer_count;
 					integer_count_error = other_integer_count_error;
-
 				}
-
 
 				if (in_block_idx == 0)
 				{
-
 					best_integer_count_error = integer_count_error;
 
 					int ql = quant_mode_table[best_integer_count + 1][bitcount];
 
 					uint8_t best_quant_level = static_cast<uint8_t>(ql);
 					uint8_t best_format = FMT_LUMINANCE;
-
-
 
 					if (ql >= QUANT_6)
 					{
@@ -167,10 +162,15 @@ __inline__ __device__ void compress_block(const block_size_descriptor* const bsd
 				int current_blk_mode_idx = candidate_block_mode_index[tid];
 				int current_col_quant_level = candidate_color_quant_level[tid];
 
+#if CUDA_OUTBUFFER_DEBUG
+				printf("global index:%d\n", current_blk_mode_idx);
+#endif
+
 				#pragma unroll
 				for (int candiate_idx = 0; candiate_idx < 6; candiate_idx++)
 				{
-					if (candidate_combine_errors[candiate_idx] < current_tid_error)
+					float other_candidate_error = candidate_combine_errors[candiate_idx];
+					if ((other_candidate_error < current_tid_error) || ((other_candidate_error == current_tid_error) && (candiate_idx < tid)))
 					{
 						num_samller++;
 					}
@@ -183,6 +183,12 @@ __inline__ __device__ void compress_block(const block_size_descriptor* const bsd
 				candidate_block_mode_index[num_samller] = current_blk_mode_idx;
 				candidate_color_quant_level[num_samller] = current_col_quant_level;
 			}
+#if CUDA_OUTBUFFER_DEBUG
+			if (tid == 0)
+			{
+				printf("\n");
+			}
+#endif
 		}
 
 		block_mode_process_idx += 2;
@@ -193,7 +199,7 @@ __inline__ __device__ void compress_block(const block_size_descriptor* const bsd
 #if CUDA_OUTBUFFER_DEBUG
 	if (tid < 4)
 	{
-		printf("candidate quant level: %d, candidate ep format: %d, error: %f\n", candidate_color_quant_level[tid], candidate_ep_format_specifiers[tid], candidate_combine_errors[tid]);
+		printf("candidate quant level: %d, candidate ep format: %d, error: %f, candidate_block_mode_index:%d\n", candidate_color_quant_level[tid], candidate_ep_format_specifiers[tid], candidate_combine_errors[tid], candidate_block_mode_index[tid]);
 	}
 #endif
 }
