@@ -27,6 +27,37 @@ __shared__ float4 shared_rgbs_color;
 
 __shared__ float shared_block_compress_error;
 
+struct endpoints
+{
+	float4 endpt0;
+	float4 endpt1;
+};
+
+struct endpoints_and_weights
+{
+	endpoints ep;
+	float weights[BLOCK_MAX_TEXELS];
+};
+
+struct symbolic_compressed_block
+{
+	endpoints_and_weights ei1;
+
+	uint8_t block_type;
+	uint16_t block_mode;
+	quant_method quant_mode; // color quant mode
+	float errorval;
+
+	uint8_t color_formats;
+	uint8_t weights[BLOCK_MAX_WEIGHTS];
+
+	uint8_t color_values[8]; // * 
+	int constant_color[4];
+};
+
+__shared__ symbolic_compressed_block shared_best_symbolic_block;
+
+
 struct quant_and_transfer_table
 {
 	uint8_t quant_to_unquant[32];
@@ -66,5 +97,11 @@ __constant__ int quant_levels_map[21] =
 __inline__ __device__ unsigned int get_quant_level(quant_method method)
 {
 	return quant_levels_map[method];
+}
+
+__device__ block_mode get_block_mode(const block_size_descriptor* const bsd, unsigned int block_mode)
+{
+	unsigned int packed_index = bsd->block_mode_packed_index[block_mode];
+	return bsd->block_modes[packed_index];
 }
 #endif

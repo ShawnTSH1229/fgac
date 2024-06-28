@@ -183,17 +183,17 @@ __device__ void recompute_ideal_colors_1plane(
 	float4 scale_dir = normalize(make_float4(rgba_sum.x, rgba_sum.y, rgba_sum.z, 0));
 	
 	float scale_max = 0.0f;
-	float scale_min = 1e10f;
+	float scale_min = 1e30f;
 
 	for (unsigned int j = 0; j < blk.texel_count; j++)
 	{
 		float4 rgba = make_float4(blk.data_r[j], blk.data_g[j], blk.data_b[j], blk.data_a[j]);
-		float scale = dot(float3(scale_dir.x, scale_dir.x, scale_dir.x), float3(rgba.x, rgba.y, rgba.z));
-		scale_min = min(scale, scale_min);
-		scale_max = max(scale, scale_max);
+		float scale = dot(float3(scale_dir.x, scale_dir.y, scale_dir.z), float3(rgba.x, rgba.y, rgba.z));
+		scale_min = fminf(scale, scale_min);
+		scale_max = fmaxf(scale, scale_max);
 	}
 
-	float scalediv = scale_min / max(scale_max, 1e-10f);
+	float scalediv = scale_min / fmaxf(scale_max, 1e-10f);
 	scalediv = clamp(scalediv,0.0,1.0);
 
 

@@ -20,8 +20,9 @@ extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, 
 void fgac_example()
 {
 	//input parameters
-	std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_4_4.png");
-
+	//std::string imagePath("H:/ShawnTSH1229/fgac/test/test.jpeg");
+	std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_debug_4_4.tga");
+	
 	static constexpr uint32_t blockx = 4;
 	static constexpr uint32_t blocky = 4;
 
@@ -42,8 +43,8 @@ void fgac_example()
 	hdr->magic[2] = (magic >> 16) & 0xFF;
 	hdr->magic[3] = (magic >> 24) & 0xFF;
 
-	hdr->block_x = static_cast<uint8_t>(blk_num_x);
-	hdr->block_y = static_cast<uint8_t>(blk_num_y);
+	hdr->block_x = static_cast<uint8_t>(blockx);
+	hdr->block_y = static_cast<uint8_t>(blocky);
 	hdr->block_z = static_cast<uint8_t>(1);
 
 	uint32_t dim_x = width;
@@ -68,9 +69,9 @@ void fgac_example()
 	uint8_t* host_debug_buffer = (uint8_t*)malloc(4 * 4 * 4);
 #endif
 
-	image_compress(outastc.data(), srcData, &bsd, width, height, blk_num_x, blk_num_y, sizeof(astc_header),
+	image_compress(outastc.data(), srcData, &bsd, width, height, blk_num_x, blk_num_y, sizeof(astc_header)
 #if CUDA_OUTBUFFER_DEBUG
-		host_debug_buffer
+		, host_debug_buffer
 #endif	
 		);
 #if CUDA_OUTBUFFER_DEBUG

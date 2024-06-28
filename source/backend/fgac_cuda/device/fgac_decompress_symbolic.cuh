@@ -185,7 +185,8 @@ __device__ float compute_symbolic_block_difference_1plane_1partition(
 		float metric = color_error_r + color_error_g + color_error_b + color_error_a;
 
 #if ASTC_DEBUG_COUT
-		std::cout << "original color x: " << color_orig_r << " color_r: " << color_r << " metric:" << metric << std::endl;
+		std::cout << "original color z: " << color_orig_b << " color_z: " << color_b << " metric:" << metric << std::endl;
+		std::cout << "color_error_r: " << color_error_r << "color_error_g: " << color_error_g << " color_error_b:" << color_error_b << std::endl;
 #endif
 		// Mask off bad lanes
 		summa += metric;

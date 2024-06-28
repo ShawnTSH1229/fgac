@@ -4,8 +4,8 @@
 
 int main()
 {
-	//cuda_backend_test();
-	fgac_example();
+	cuda_backend_test();
+	//fgac_example();
 	return 0;
 }
 

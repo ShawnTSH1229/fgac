@@ -83,8 +83,10 @@ void cuda_backend_test()
 	static constexpr uint32_t blockx = 4;
 	static constexpr uint32_t blocky = 4;
 
-	std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_4_4.png");
+	//std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_4_4.png");
 	//std::string imagePath("H:/ShawnTSH1229/fgac/test/test.jpeg");
+	std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_debug_4_4.tga");
+
 	int width = 0, height = 0, comp = 0;
 	stbi_uc* srcData = stbi_load(imagePath.c_str(), &width, &height, &comp, STBI_rgb_alpha);
 	uint32_t texSize = width * height * 4 * sizeof(uint8_t);
@@ -93,6 +95,35 @@ void cuda_backend_test()
 	ctx->config.cw_sum_weight = 4;
 	ctx->config.tune_db_limit = 2254.6614;
 	init_block_size_descriptor(blockx, blocky, ctx->bsd);
+
+#if 0
+	int debug_x_start = 180;
+	int debug_y_start = 392;
+	unsigned char debug_buffer[4 * 4 * 4];
+	int total_idx = 0;
+	for (int y_idx = debug_y_start; y_idx < debug_y_start + 4; y_idx++)
+	{
+		for (int x_idx = debug_x_start; x_idx < debug_x_start + 4; x_idx++)
+		{
+			unsigned char* pix_data = ((unsigned char*)srcData) + (y_idx * width + x_idx) * 4;
+
+			unsigned char col_r = *(pix_data + 0);
+			unsigned char col_g = *(pix_data + 1);
+			unsigned char col_b = *(pix_data + 2);
+			unsigned char col_a = *(pix_data + 3);
+
+			debug_buffer[total_idx + 0] = col_r;
+			debug_buffer[total_idx + 1] = col_g;
+			debug_buffer[total_idx + 2] = col_b;
+			debug_buffer[total_idx + 3] = col_a;
+			total_idx += 4;
+			
+		}
+	}
+	stbi_write_tga("H:/ShawnTSH1229/fgac/tex_test_4_4.tga", 4, 4, 4, debug_buffer);
+#endif
+
+
 
 	uint32_t magic = ASTC_MAGIC_ID;
 
