@@ -1,4 +1,3 @@
-#include "fgac.h"
 #include <stdio.h>
 #include <string>
 #include <fstream>
@@ -10,6 +9,7 @@
 #include "stb_image_write.h"
 #include "fgac_common/fgac_device_host_common.h"
 #include "fgac_host/fgac_host_common.h"
+#include "cxxopts.hpp"
 
 extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, const block_size_descriptor* const bsd, uint32_t tex_size_x, uint32_t tex_size_y, uint32_t blk_num_x, uint32_t blk_num_y, uint32_t dest_offset
 #if CUDA_OUTBUFFER_DEBUG
@@ -17,17 +17,33 @@ extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, 
 #endif
 );
 
-void fgac_example()
+int main(int argc, char* argv[])
 {
-	//input parameters
-	std::string imagePath("H:/ShawnTSH1229/fgac/test/test.jpeg");
-	//std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_debug_4_4.tga");
-	
+	cxxopts::Options opts("FGAC", "fast gpu astc compression");
+	opts.allow_unrecognised_options();
+	opts.add_options()
+		("i,input_image", "Input image path", cxxopts::value<std::string>())
+		("o,output_astc", "Output astc path", cxxopts::value<std::string>())
+		("h,help", "Print help message.");
+
+	auto opt_result = opts.parse(argc, argv);
+	if (opt_result.count("h") || argc < 2 || opt_result.count("i") == 0 || opt_result.count("o") == 0)
+	{
+		printf(opts.help().c_str());
+		printf("\n");
+		printf("example: -i H:/xxx/xxx/test_img_0.jpeg -o H:/xxx/xxx/tex_test_out.astc");
+		exit(-1);
+	}
+
+	std::string input_image_path = opt_result["i"].as<std::string>();
+	std::string output_astc_path = opt_result["o"].as<std::string>();
+
+
 	static constexpr uint32_t blockx = 4;
 	static constexpr uint32_t blocky = 4;
 
 	int width = 0, height = 0, comp = 0;
-	stbi_uc* srcData = stbi_load(imagePath.c_str(), &width, &height, &comp, STBI_rgb_alpha);
+	stbi_uc* srcData = stbi_load(input_image_path.c_str(), &width, &height, &comp, STBI_rgb_alpha);
 	uint32_t texSize = width * height * 4 * sizeof(uint8_t);
 
 	uint32_t blk_num_x = width / blockx;
@@ -75,11 +91,11 @@ void fgac_example()
 #endif	
 		);
 #if CUDA_OUTBUFFER_DEBUG
-	stbi_write_tga("H:/ShawnTSH1229/fgac/tex_test_4_4.tga", 4, 4, 4, host_debug_buffer);
 	free(host_debug_buffer);
 #endif
 
-	std::string filename("H:/ShawnTSH1229/fgac/tex_test_4_4.astc");
-	std::ofstream file(filename, std::ios::out | std::ios::binary);
+	std::ofstream file(output_astc_path, std::ios::out | std::ios::binary);
 	file.write((char*)outastc.data(), outastc.size());
+
+	return 0;
 }
