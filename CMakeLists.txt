@@ -22,7 +22,6 @@ include_directories(${FGAC_ROOT_DIR}/source)
 include_directories(${FGAC_ROOT_DIR}/include)
 
 # thirdparty
-include_directories(${FGAC_ROOT_DIR}/thirdparty/spdlog)
 include_directories(${FGAC_ROOT_DIR}/thirdparty/stb)
 
 add_definitions(-DFGAC_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
