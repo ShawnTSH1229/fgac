@@ -336,7 +336,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 				float scalediv = min_scale / fmaxf(max_scale, 1e-10f);
 				scalediv = clamp(scalediv, 0.0, 1.0);
 				float3 sds = shared_scale_dir * max_scale;
-				shared_rgbs_color = make_float4(sds.x, sds.y, sds.x, scalediv);
+				shared_rgbs_color = make_float4(sds.x, sds.y, sds.z, scalediv);
 #if CUDA_OUTBUFFER_DEBUG
 				printf("shared_rgbs_color %f,%f,%f,%f\n", shared_rgbs_color.x, shared_rgbs_color.y, shared_rgbs_color.z, shared_rgbs_color.w);
 				printf("max_scale % f\n", max_scale);
@@ -421,7 +421,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 #if CUDA_OUTBUFFER_DEBUG
 				if (candidate_loop_idx == 0 && sub_block_idx == 0)
 				{
-					printf("tid: %d , original color z: %f, colorfz:%f, metric:%f\n", tid, color_origin.z, colorf.z, metric);
+					printf("tid: %d , original color z: %f, colorfz:%d, metric:%f\n", tid, color_origin.z, int(color_values[1]), metric);
 					printf("tid: %d , color_error x: %f, color_error y:%f, color_error z:%f\n", tid, color_error.x, color_error.y, color_error.z);
 				}
 #endif

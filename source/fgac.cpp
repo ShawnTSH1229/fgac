@@ -20,8 +20,8 @@ extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, 
 void fgac_example()
 {
 	//input parameters
-	//std::string imagePath("H:/ShawnTSH1229/fgac/test/test.jpeg");
-	std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_debug_4_4.tga");
+	std::string imagePath("H:/ShawnTSH1229/fgac/test/test.jpeg");
+	//std::string imagePath("H:/ShawnTSH1229/fgac/tex_test_debug_4_4.tga");
 	
 	static constexpr uint32_t blockx = 4;
 	static constexpr uint32_t blocky = 4;
