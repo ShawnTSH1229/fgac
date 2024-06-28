@@ -119,15 +119,9 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 		{
 			float3 texel_datum = datav - data_mean;
 
-			unsigned sum_x_mask = __ballot_sync(mask, texel_datum.x > 0);
-			unsigned sum_y_mask = __ballot_sync(mask, texel_datum.y > 0);
-			unsigned sum_z_mask = __ballot_sync(mask, texel_datum.z > 0);
-
-			float3 valid_sum_xp = (sum_x_mask & (1 << lane_id)) != 0 ? texel_datum : float3(0, 0, 0);
-			float3 valid_sum_yp = (sum_y_mask & (1 << lane_id)) != 0 ? texel_datum : float3(0, 0, 0);
-			float3 valid_sum_zp = (sum_z_mask & (1 << lane_id)) != 0 ? texel_datum : float3(0, 0, 0);
-
-			__syncwarp(mask);
+			float3 valid_sum_xp = (texel_datum.x != 0 ? texel_datum : float3(0, 0, 0));
+			float3 valid_sum_yp = (texel_datum.x != 0 ? texel_datum : float3(0, 0, 0));
+			float3 valid_sum_zp = (texel_datum.x != 0 ? texel_datum : float3(0, 0, 0));
 
 			float3 sum_xp = warp_reduce_vec_sum(mask, valid_sum_xp);
 			float3 sum_yp = warp_reduce_vec_sum(mask, valid_sum_yp);
