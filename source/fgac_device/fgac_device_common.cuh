@@ -99,9 +99,39 @@ __inline__ __device__ unsigned int get_quant_level(quant_method method)
 	return quant_levels_map[method];
 }
 
-__device__ block_mode get_block_mode(const block_size_descriptor* const bsd, unsigned int block_mode)
+__inline__ __device__ block_mode get_block_mode(const block_size_descriptor* const bsd, unsigned int block_mode)
 {
 	unsigned int packed_index = bsd->block_mode_packed_index[block_mode];
 	return bsd->block_modes[packed_index];
+}
+
+template <typename T>
+__inline__ __device__ T warp_reduce_sum(unsigned mask, T val)
+{
+#pragma unroll
+	for (int offset = (BLOCK_MAX_TEXELS >> 1); offset > 0; offset >>= 1)
+	{
+		val += __shfl_down_sync(mask, val, offset, warpSize);
+	}
+	return val;
+}
+
+template <typename T>
+__inline__ __device__ T warp_reduce_vec_sum(unsigned mask, T val)
+{
+	T ret;
+	ret.x = warp_reduce_sum(mask, val.x);
+	ret.y = warp_reduce_sum(mask, val.y);
+	ret.z = warp_reduce_sum(mask, val.z);
+	return ret;
+}
+
+__inline__ __device__ float3 warp_boardcast_vec(unsigned mask, float3 val)
+{
+	float3 ret;
+	ret.x = __shfl_sync(mask, val.x, 0, BLOCK_MAX_TEXELS);
+	ret.y = __shfl_sync(mask, val.y, 0, BLOCK_MAX_TEXELS);
+	ret.z = __shfl_sync(mask, val.z, 0, BLOCK_MAX_TEXELS);
+	return ret;
 }
 #endif

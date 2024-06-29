@@ -100,4 +100,77 @@ __inline__ __device__ void compute_color_error_for_every_integer_count_and_quant
 	}
 }
 
+__inline__ __device__ void compute_encoding_choice_errors(const float3& data_mean,const float3& safe_dir,const float3& datav, const uint32_t& lane_id,const uint32_t& tid,const unsigned& mask)
+{
+	line3 uncor_rgb_lines;
+	line3 samec_rgb_lines;
+
+	processed_line3 uncor_rgb_plines;
+	processed_line3 samec_rgb_plines;
+	processed_line3 luminance_plines;
+
+	uncor_rgb_lines.a = data_mean;
+	uncor_rgb_lines.b = safe_dir;
+
+	samec_rgb_lines.a = make_float3(0);
+	samec_rgb_lines.b = normalize_safe(data_mean);
+
+	uncor_rgb_plines.amod = uncor_rgb_lines.a - uncor_rgb_lines.b * dot(uncor_rgb_lines.a, uncor_rgb_lines.b);
+	uncor_rgb_plines.bs = uncor_rgb_lines.b;
+
+	// Same chroma always goes though zero, so this is simpler than the others
+	samec_rgb_plines.amod = make_float3(0);
+	samec_rgb_plines.bs = samec_rgb_lines.b;
+
+#if CUDA_OUTBUFFER_DEBUG
+	if (lane_id == 0)
+	{
+		printf("lane_id %d, x: %f,x: %f,x: %f\n", lane_id, data_mean.x, data_mean.y, data_mean.z);
+	}
+#endif
+
+	// Luminance always goes though zero, so this is simpler than the others
+	float val = 0.577350258827209473f;
+	luminance_plines.amod = make_float3(0);
+	luminance_plines.bs = make_float3(val, val, val);
+
+	// Compute uncorrelated error
+	float param = dot(datav, uncor_rgb_plines.bs);
+	float3 dist = (uncor_rgb_plines.amod + param * uncor_rgb_plines.bs) - datav;
+	float uncor_err = dot(dist, dist);
+
+	// Compute same chroma error - no "amod", its always zero
+	param = dot(datav, samec_rgb_plines.bs);
+	dist = param * samec_rgb_plines.bs - datav;
+	float samec_err = dot(dist, dist);
+
+	// Compute luma error - no "amod", its always zero
+	param = dot(datav, luminance_plines.bs);
+	dist = param * luminance_plines.bs - datav;
+	float l_err = dot(dist, dist);
+
+	if (tid == 0)
+	{
+		shared_data_mean = data_mean;
+		shared_scale_dir = samec_rgb_lines.b;
+	}
+
+	__syncwarp(mask);
+
+	float sum_uncor_err = warp_reduce_sum(mask, uncor_err);
+	float sum_samec_err = warp_reduce_sum(mask, samec_err);
+	float sum_l_err = warp_reduce_sum(mask, l_err);
+
+	if (lane_id == 0)
+	{
+		shared_rgb_scale_error = (sum_samec_err - sum_uncor_err) * 0.7f;// empirical
+		shared_luminance_error = (sum_l_err - sum_uncor_err) * 3.0f;// empirical
+
+#if CUDA_OUTBUFFER_DEBUG
+		printf("RGB Scale Error: %f\n", (sum_samec_err - sum_uncor_err) * 0.7f);
+		printf("RGB Lumin Error: %f\n", (sum_l_err - sum_uncor_err) * 3.0f);
+#endif
+	}
+}
+
 #endif
