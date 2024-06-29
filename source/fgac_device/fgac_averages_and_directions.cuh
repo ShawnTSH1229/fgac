@@ -6,9 +6,9 @@ __inline__ __device__ float3 compute_avgs_and_dirs_3_comp(float3 datav,float3 da
 	float3 safe_dir;
 	float3 texel_datum = datav - data_mean;
 
-	float3 valid_sum_xp = (texel_datum.x != 0 ? texel_datum : float3(0, 0, 0));
-	float3 valid_sum_yp = (texel_datum.x != 0 ? texel_datum : float3(0, 0, 0));
-	float3 valid_sum_zp = (texel_datum.x != 0 ? texel_datum : float3(0, 0, 0));
+	float3 valid_sum_xp = (texel_datum.x > 0 ? texel_datum : float3(0, 0, 0));
+	float3 valid_sum_yp = (texel_datum.y > 0 ? texel_datum : float3(0, 0, 0));
+	float3 valid_sum_zp = (texel_datum.z > 0 ? texel_datum : float3(0, 0, 0));
 
 	float3 sum_xp = warp_reduce_vec_sum(mask, valid_sum_xp);
 	float3 sum_yp = warp_reduce_vec_sum(mask, valid_sum_yp);

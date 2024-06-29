@@ -11,11 +11,7 @@
 #include "fgac_host/fgac_host_common.h"
 #include "cxxopts.hpp"
 
-extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, const block_size_descriptor* const bsd, uint32_t tex_size_x, uint32_t tex_size_y, uint32_t blk_num_x, uint32_t blk_num_y, uint32_t dest_offset
-#if CUDA_OUTBUFFER_DEBUG
-	, uint8_t * host_debug_buffer
-#endif
-);
+extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, const block_size_descriptor* const bsd, uint32_t tex_size_x, uint32_t tex_size_y, uint32_t blk_num_x, uint32_t blk_num_y, uint32_t dest_offset);
 
 int main(int argc, char* argv[])
 {
@@ -81,18 +77,7 @@ int main(int argc, char* argv[])
 	block_size_descriptor bsd;
 	init_block_descriptor(blockx, blocky, bsd);
 
-#if CUDA_OUTBUFFER_DEBUG
-	uint8_t* host_debug_buffer = (uint8_t*)malloc(4 * 4 * 4);
-#endif
-
-	image_compress(outastc.data(), srcData, &bsd, width, height, blk_num_x, blk_num_y, sizeof(astc_header)
-#if CUDA_OUTBUFFER_DEBUG
-		, host_debug_buffer
-#endif	
-		);
-#if CUDA_OUTBUFFER_DEBUG
-	free(host_debug_buffer);
-#endif
+	image_compress(outastc.data(), srcData, &bsd, width, height, blk_num_x, blk_num_y, sizeof(astc_header));
 
 	std::ofstream file(output_astc_path, std::ios::out | std::ios::binary);
 	file.write((char*)outastc.data(), outastc.size());

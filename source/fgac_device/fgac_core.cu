@@ -18,13 +18,9 @@ __debugbreak(); \
 }\
 
 
-#define ASTC_BLOCK_FORMAT_SIZE  4 /*ASTC 4*4 */
+#define ASTC_BLOCK_FORMAT_SIZE  4 /* ASTC 4x4 */
 
-__global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcData, const block_size_descriptor* const bsd, uint32_t tex_size_x, uint32_t tex_size_y, uint32_t blk_num_x, uint32_t blk_num_y
-#if CUDA_OUTBUFFER_DEBUG
-	,uint8_t* debug_out_buffer
-#endif
-)
+__global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcData, const block_size_descriptor* const bsd, uint32_t tex_size_x, uint32_t tex_size_y, uint32_t blk_num_x, uint32_t blk_num_y)
 {
 	uint32_t bid = blockIdx.y * gridDim.x + blockIdx.x;
 	uint32_t tid = threadIdx.x;
@@ -119,11 +115,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 	}
 }
 
-extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, const block_size_descriptor* const bsd, uint32_t tex_size_x, uint32_t tex_size_y, uint32_t blk_num_x, uint32_t blk_num_y, uint32_t dest_offset
-#if CUDA_OUTBUFFER_DEBUG
-	,uint8_t* host_debug_buffer
-#endif
-)
+extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, const block_size_descriptor* const bsd, uint32_t tex_size_x, uint32_t tex_size_y, uint32_t blk_num_x, uint32_t blk_num_y, uint32_t dest_offset)
 {
 	dim3 grid_size(blk_num_x, blk_num_y);
 	dim3 block_size(32, 1); // [warp size, 1]
@@ -143,23 +135,9 @@ extern "C" void image_compress(uint8_t * dstData, const uint8_t* const srcData, 
 	CUDA_VARIFY(cudaMalloc((void**)&device_bsd, bsd_size));
 	CUDA_VARIFY(cudaMemcpy(device_bsd, bsd, bsd_size, cudaMemcpyHostToDevice));
 
-
-#if CUDA_OUTBUFFER_DEBUG
-	int debug_buffer_size = 4 * 4 * 4;
-	uint8_t* debug_out_buffer = nullptr;
-	CUDA_VARIFY(cudaMalloc((void**)&debug_out_buffer, debug_buffer_size));
-#endif
-
-	gpu_encode_kernel <<< grid_size, block_size >>> (dest_device_data, src_device_data, device_bsd, tex_size_x, tex_size_y, blk_num_x, blk_num_y
-#if CUDA_OUTBUFFER_DEBUG
-		,debug_out_buffer
-#endif
-		);
+	gpu_encode_kernel <<< grid_size, block_size >>> (dest_device_data, src_device_data, device_bsd, tex_size_x, tex_size_y, blk_num_x, blk_num_y);
 
 	CUDA_VARIFY(cudaMemcpy(dstData + dest_offset, dest_device_data, dest_astc_size, cudaMemcpyDeviceToHost));
-#if CUDA_OUTBUFFER_DEBUG
-	CUDA_VARIFY(cudaMemcpy(host_debug_buffer, debug_out_buffer, debug_buffer_size, cudaMemcpyDeviceToHost));
-#endif
 
 	cudaFree(src_device_data);
 	cudaFree(dest_device_data);
