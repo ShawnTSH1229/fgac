@@ -42,10 +42,10 @@ We don't support astc decompression for now. You can decompress the .astc file b
 
 before astc compression:
 <p align="center">
-    <img src="/resource/after_astc_compression.png" width="65%" height="65%">
+    <img src="/resource/after_astc_compression.png" width="50%" height="50%">
 </p>
 
 after astc compression:
 <p align="center">
-    <img src="/resource/before_astc_comression.png" width="65%" height="65%">
+    <img src="/resource/before_astc_comression.png" width="50%" height="50%">
 </p>
