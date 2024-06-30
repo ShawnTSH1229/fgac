@@ -1,6 +1,8 @@
 # FGAC
 fast astc texture compression using cuda
 
+[<u>**FGAC Development Blog**</u>](https://shawntsh1229.github.io/2024/06/18/GPU-Based-ASTC-Compression-Using-CUDA/)
+
 # Overview
 ASTC is a fixed-rate, lossy texture compression system that is designed to offer an unusual degree of flexibility and to support a very wide range of use cases, while providing better image quality than most formats in common use today.
 
