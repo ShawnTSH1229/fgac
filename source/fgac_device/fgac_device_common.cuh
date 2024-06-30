@@ -126,7 +126,7 @@ __inline__ __device__ T warp_reduce_vec_sum(unsigned mask, T val)
 	return ret;
 }
 
-__inline__ __device__ float3 warp_boardcast_vec(unsigned mask, float3 val)
+__inline__ __device__ float3 warp_broadcast_vec(unsigned mask, float3 val)
 {
 	float3 ret;
 	ret.x = __shfl_sync(mask, val.x, 0, BLOCK_MAX_TEXELS);

@@ -52,7 +52,7 @@ __inline__ __device__ void find_candidate_block_modes(const block_size_descripto
 			float eai_weight = ix;
 
 
-			// Look up the two closest indexes and return the one that was closest(quant)
+			// ** Look up the two closest indexes and return the one that was closest(quant)
 			float ix1 = ix * quant_level_m1;
 
 			int weightl = int(ix1);
@@ -87,8 +87,6 @@ __inline__ __device__ void find_candidate_block_modes(const block_size_descripto
 			error += __shfl_down_sync(0xFFFFFFFF, error, 4, 32);
 			error += __shfl_down_sync(0xFFFFFFFF, error, 2, 32);
 			error += __shfl_down_sync(0xFFFFFFFF, error, 1, 32);
-
-
 
 			//** one_partition_find_best_combination_for_bitcount
 			if (in_block_idx < 4)

@@ -6,7 +6,7 @@
 __inline__ __device__ void compute_ideal_colors_and_weights_4_comp(float3 datav, uint32_t lane_id, uint32_t tid, unsigned mask, float3 data_mean, float3& safe_dir)
 {
 	__syncwarp(mask);
-	safe_dir = warp_boardcast_vec(mask, safe_dir);
+	safe_dir = warp_broadcast_vec(mask, safe_dir);
 	const float param = dot(datav - data_mean, safe_dir);
 	float lowparam = param;
 	float highparam = param;

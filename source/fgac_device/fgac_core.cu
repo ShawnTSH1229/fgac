@@ -78,7 +78,7 @@ __global__ void gpu_encode_kernel(uint8_t * dstData, const uint8_t* const srcDat
 		float3 sum = warp_reduce_vec_sum(mask, datav);
 		__syncwarp(mask);
 		
-		sum = warp_boardcast_vec(mask, sum);
+		sum = warp_broadcast_vec(mask, sum);
 		const float3 data_mean = sum / BLOCK_MAX_TEXELS;
 
 		float3 safe_dir = compute_avgs_and_dirs_3_comp(datav, data_mean, lane_id, mask);
